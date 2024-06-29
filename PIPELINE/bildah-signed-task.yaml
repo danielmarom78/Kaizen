@@ -291,7 +291,7 @@ spec:
       buildah copy $container sbom-cyclonedx.json sbom-purl.json /root/buildinfo/content_manifests/
       buildah config -a org.opencontainers.image.base.name=${base_image_name} -a org.opencontainers.image.base.digest=${base_image_digest} $container
 
-      cosign sign --key /etc/cosign-keys/cosign.pub $IMAGE
+      cosign sign --key /etc/cosign-keys/cosign.key $IMAGE
 
       buildah commit $container $IMAGE
 
