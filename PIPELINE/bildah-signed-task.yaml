@@ -279,7 +279,7 @@ spec:
       runAsUser: 0
 
   - name: inject-sbom-and-push
-    image: $(params.BUILDER_IMAGE)
+    image: ghcr.io/danielmarom78/buildah-cosign:1.0
     resources: {}
     script: |
       set -x  

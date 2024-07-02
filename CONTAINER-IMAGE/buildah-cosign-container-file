@@ -1,6 +1,0 @@
-FROM XXX
-
-RUN apt-get update && apt-get install -y wget
-
-RUN wget https://github.com/sigstore/cosign/releases/download/v1.13.1/cosign-linux-amd64 -O /usr/local/bin/cosign \
-    && chmod +x /usr/local/bin/cosign

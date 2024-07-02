@@ -11,7 +11,7 @@ FULL_IMAGE_NAME="$REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
 
 set -x
 
-podman build -t $IMAGE_NAME:$IMAGE_TAG .
+podman build -t $IMAGE_NAME:$IMAGE_TAG -f buildah-cosign.containerfile
 podman login $REGISTRY -u danielmarom78 -p $GIT_TOKEN
 podman tag $IMAGE_NAME:$IMAGE_TAG $FULL_IMAGE_NAME
 podman push $FULL_IMAGE_NAME
