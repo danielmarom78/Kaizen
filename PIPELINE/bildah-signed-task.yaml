@@ -282,6 +282,8 @@ spec:
     image: $(params.BUILDER_IMAGE)
     resources: {}
     script: |
+      set -x  
+
       # Expose base image digests
       buildah images --format '{{`{{ .Name }}:{{ .Tag }}@{{ .Digest }}`}}' | grep -v $IMAGE > $(results.BASE_IMAGES_DIGESTS.path)
 
@@ -342,6 +344,9 @@ spec:
   volumes:
   - emptyDir: {}
     name: varlibcontainers
+  - name: cosign-keys
+    secret:
+      secretName: cosign-secret
   workspaces:
   - name: source
     description: Workspace containing the source code to build.
