@@ -346,7 +346,7 @@ spec:
     name: varlibcontainers
   - name: cosign-keys
     secret:
-      secretName: cosign-secret
+      secretName: signing-secrets
   workspaces:
   - name: source
     description: Workspace containing the source code to build.
