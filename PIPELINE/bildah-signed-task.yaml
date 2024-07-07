@@ -13,7 +13,7 @@ spec:
     Buildah task builds source code into a container image and pushes the image into container registry using buildah tool.
     In addition it generates a SBOM file, injects the SBOM file into final container image and pushes the SBOM file as separate image using cosign tool.
     When [Java dependency rebuild](https://redhat-appstudio.github.io/docs.stonesoup.io/Documentation/main/cli/proc_enabled_java_dependencies.html) is enabled it triggers rebuilds of Java artifacts.
-    When prefetch-dependencies task was activated it is using its artifacts to run build in hermetic environment.    
+    When prefetch-dependencies task was activated it is using its artifacts to run build in hermetic environment.        
   params:
   - description: Reference of the image buildah will produce.
     name: IMAGE
@@ -176,7 +176,7 @@ spec:
       # Save the SBOM produced by Cachi2 so it can be merged into the final SBOM later
       if [ -n "${PREFETCH_INPUT}" ]; then
         cp /tmp/cachi2/output/bom.json ./sbom-cachi2.json
-      fi      
+      fi            
 
     securityContext:
       capabilities:
@@ -192,7 +192,7 @@ spec:
     script: |
       syft dir:$(workspaces.source.path) --output cyclonedx-json=$(workspaces.source.path)/sbom-source.json
       find $(cat /workspace/container_path) -xtype l -delete
-      syft dir:$(cat /workspace/container_path) --output cyclonedx-json=$(workspaces.source.path)/sbom-image.json      
+      syft dir:$(cat /workspace/container_path) --output cyclonedx-json=$(workspaces.source.path)/sbom-image.json            
     volumeMounts:
     - mountPath: /var/lib/containers
       name: varlibcontainers
@@ -204,7 +204,7 @@ spec:
         sed -i 's/^/ /' $(results.SBOM_JAVA_COMPONENTS_COUNT.path) # Workaround for SRVKP-2875
       else
         touch $(results.JAVA_COMMUNITY_DEPENDENCIES.path)
-      fi      
+      fi            
     volumeMounts:
     - mountPath: /var/lib/containers
       name: varlibcontainers
@@ -241,7 +241,7 @@ spec:
 
       # write the CycloneDX unified SBOM
       with open("./sbom-cyclonedx.json", "w") as f:
-        json.dump(image_sbom, f, indent=4)      
+        json.dump(image_sbom, f, indent=4)            
     workingDir: $(workspaces.source.path)
     securityContext:
       runAsUser: 0
@@ -255,7 +255,7 @@ spec:
         mv sbom-temp.json sbom-cyclonedx.json
       else
         echo "Skipping step since no Cachi2 SBOM was produced"
-      fi      
+      fi            
     workingDir: $(workspaces.source.path)
     securityContext:
       runAsUser: 0
@@ -273,13 +273,13 @@ spec:
       purl_content = {"image_contents": {"dependencies": purls}}
 
       with open("sbom-purl.json", "w") as output_file:
-        json.dump(purl_content, output_file, indent=4)      
+        json.dump(purl_content, output_file, indent=4)            
     workingDir: $(workspaces.source.path)
     securityContext:
       runAsUser: 0
 
   - name: inject-sbom-and-push
-    image: ghcr.io/danielmarom78/buildah-cosign:1.0
+    image: $(params.BUILDER_IMAGE)
     resources: {}
     script: |
       set -x  
@@ -291,10 +291,8 @@ spec:
       base_image_digest=$(buildah inspect --format '{{`{{ index .ImageAnnotations "org.opencontainers.image.base.digest"}}`}}' $IMAGE)
       container=$(buildah from --pull-never $IMAGE)
       buildah copy $container sbom-cyclonedx.json sbom-purl.json /root/buildinfo/content_manifests/
-      buildah config -a org.opencontainers.image.base.name=${base_image_name} -a org.opencontainers.image.base.digest=${base_image_digest} $container
-
-      cosign sign --key /etc/cosign-keys/cosign.key $IMAGE
-
+      buildah config -a org.opencontainers.image.base.name=${base_image_name} -a org.opencontainers.image.base.digest=${base_image_digest} $container      
+     
       buildah commit $container $IMAGE
 
       status=-1
@@ -315,8 +313,26 @@ spec:
       fi
 
       cat "$(workspaces.source.path)"/image-digest | tee $(results.IMAGE_DIGEST.path)
-      echo -n "$IMAGE" | tee $(results.IMAGE_URL.path)      
+      echo -n "$IMAGE" | tee $(results.IMAGE_URL.path)
+    securityContext:
+      runAsUser: 0
+      capabilities:
+        add:
+          - SETFCAP
+    volumeMounts:
+    - mountPath: /var/lib/containers
+      name: varlibcontainers
+    - mountPath: /etc/cosign-keys
+      name: cosign-keys
+    workingDir: $(workspaces.source.path)
 
+  - name: cosign-signing
+    image: quay.io/redhat-appstudio/cosign:v2.1.1
+    script: |
+      #!/bin/sh
+      set -x
+      echo "Signing the image with Cosign"
+      COSIGN_PASSWORD=openshift cosign sign --key /etc/cosign-keys/cosign.key $IMAGE
     securityContext:
       runAsUser: 0
       capabilities:
