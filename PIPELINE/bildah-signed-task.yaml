@@ -326,7 +326,7 @@ spec:
       name: cosign-keys
     workingDir: $(workspaces.source.path)
 
-  - name: cosign-signing
+  - name: sign-image
     image: quay.io/redhat-appstudio/cosign:v2.1.1
     args:
       - sign
