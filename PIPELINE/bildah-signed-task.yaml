@@ -328,11 +328,17 @@ spec:
 
   - name: cosign-signing
     image: quay.io/redhat-appstudio/cosign:v2.1.1
-    script: |
-      #!/bin/sh
-      set -x
-      echo "Signing the image with Cosign"
-      COSIGN_PASSWORD=openshift cosign sign --key /etc/cosign-keys/cosign.key $IMAGE
+    args:
+      - sign
+      - --key
+      - /etc/cosign-keys/cosign.key
+      - $(params.IMAGE)
+    env:
+      - name: COSIGN_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: cosign-keys
+            key: cosign.password
     securityContext:
       runAsUser: 0
       capabilities:
@@ -344,7 +350,7 @@ spec:
     - mountPath: /etc/cosign-keys
       name: cosign-keys
     workingDir: $(workspaces.source.path)
-
+    
   - name: upload-sbom
     image: quay.io/redhat-appstudio/cosign:v2.1.1
     args:
